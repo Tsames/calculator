@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>calculator</title>
+        <link href="./css/reset.css" rel="stylesheet" type="text/css" media="all"/>
+        <link href="./css/main.css" rel="stylesheet" type="text/css" media="all"/>
+    </head>
+    <body>
+        <div id="calculator-shell">
+            <div id="screen">
+                <p id='upperScreen'></p>
+                <p id='lowerScreen'></p>
+            </div>
+            <div id="keyboard">
+                <div id="columnOne" class='keyboard-columns'>
+                    <button id="One" class="numbers" data-value="1" data-key="49">1</button>
+                    <button id="Four" class="numbers" data-value="4" data-key="52">4</button>
+                    <button id="Seven" class="numbers" data-value="7" data-key="55">7</button>
+                    <button id="Zero" class="numbers" data-value="0" data-key="48">0</button>
+                </div>
+                <div id="columnTwo" class='keyboard-columns'>
+                    <button id="Two" class="numbers" data-value="2" data-key="50">2</button>
+                    <button id="Five" class="numbers" data-value="5" data-key="53">5</button>
+                    <button id="Eight" class="numbers" data-value="8" data-key="56">8</button>
+                    <button id='decimal' class="numpad" data-key="190">.</button>
+                </div>
+                <div id="columnThree" class='keyboard-columns'>
+                    <button id="Three" class="numbers" data-value="3" data-key="51">3</button>
+                    <button id="Six" class="numbers" data-value="6" data-key="54">6</button>
+                    <button id="Nine" class="numbers" data-value="9" data-key="57">9</button>
+                    <button id='backspace' class="numpad" data-key="8">Backspace</button>
+                </div>
+                <div id="columnFour" class='keyboard-columns'>
+                    <button id='add' class='operators' data-key="187">+</button>
+                    <button id='subtract' class='operators' data-key="189">-</button>
+                    <button id='multiply' class='operators' data-key="88">*</button>
+                    <button id='divide' class='operators' data-key="191">/</button>
+                </div>
+                <div id='columnFive' class='keyboard-columns'>
+                    <button id='equals' class='keyboard' data-key="13">=</button>
+                    <button id="clear" class="keyboard" data-key="67">Clear</button>
+                </div>
+            </div>
+        </div>
+    </body>
+
+    <script>
+
+        let calculator = {
+
+            //Properties -- Global Variables
+            activeText: "",
+            values: [],
+            activeOperations: [],
+
+            //Properties -- Screen Elements
+            _historyDisplay: document.querySelector("p#upperScreen"),
+            _activeDisplay: document.querySelector("p#lowerScreen"),
+
+            //Properties -- Buttons
+            _buttonNumbers: document.querySelectorAll("button.numbers"),
+            _buttonDecimal: document.querySelector("button#decimal"),
+            _buttonBackspace: document.querySelector("button#backspace"),
+            _buttonClear: document.querySelector("button#clear"),
+            _buttonOperators: document.querySelectorAll('button.operators'),
+            _buttonEnter: document.querySelector('button#equals'),
+
+            // Methods -- Manipulate Screen Elements
+            updateActiveDisplay (newText, replace = true) {
+                if (replace) {
+                    this.activeText = newText;
+                    this._activeDisplay.innerHTML = this.activeText;
+                } else {
+                    this.activeText += newText;
+                    this._activeDisplay.innerHTML = this.activeText;
+                };
+            },
+
+            updateHistoryDisplay (end = false) {
+                let message;
+                for (let i = 0; i < this.values.length; i++) {
+                    message += this.values[i].toString();
+                    if (i < this.activeOperations.length) {
+                        message += ` ${this.activeOperations[i]} `;
+                    };
+                };
+                if (end) {
+                    this._historyDisplay.innerHTML = message + ` = `;
+                } else {
+                    this._historyDisplay.innerHTML = message + " ...";
+                };
+            },
+
+            addDecimal (e) {
+                if (this.activeText.includes(".")) {
+                    return;
+                } else {
+                    this.updateActiveDisplay(".", false);
+                };
+            },
+
+            backspace (e) {
+                this.updateActiveDisplay(this.activeText.slice(0,this.activeText.length - 1));
+            },
+
+            clearScreen (e) {
+                this.updateActiveDisplay("");
+                this._historyDisplay.innerHTML = "";
+                this.activeOperations = [];
+                this.values = [];
+            },
+
+            //Methods -- Main Functionality
+            assignOperator (e) {
+                if (this.activeText != "") {
+                    this.values.push(Number(this.activeText));
+                    this.activeOperations.push(e.target.innerHTML.toString());
+                    this.updateHistoryDisplay();
+                    this.updateActiveDisplay("");
+                } else {
+                    return;
+                };
+            },
+
+            calculate (e) {
+                calc: if ((this.activeText != "") && (this.values.length >= 1) && (this.activeOperations.length > 0)) {
+                    this.values = this.values.push(Number(this.activeText));
+                    let total = this.values[0];
+                    for (let i=1; i < this.values.length; i++) {
+                        switch (this.activeOperations[i-1]) {
+                            case "+":
+                                total = this.add(total,this.values[i]);
+                                break;
+                            case "-":
+                                total = this.subtract(total,this.values[i]);
+                                break;
+                            case "*":
+                                total = this.multiply(total,this.values[i]);
+                                break;
+                            case "/":
+                                if (this.values[i] === 0) {
+                                    total = undefined
+                                    this._historyDisplay.innerHTML = "ERROR - Division by Zero!"
+                                    this._activeDisplay.innerHTML = "I see you trying to break my calculator (smh)."
+                                    break calc;
+                                } else {
+                                    total = this.divide(total,this.values[i]);
+                                    break;
+                                };
+                        };
+                    };
+                    this.outputResults(total);
+                } else {
+                    return;
+                };
+            },
+
+            outputResults (total) {
+                this.updateHistoryDisplay(true);
+                this.updateActiveDisplay(total.toString());
+                this.activeOperations = []
+                this.values = []
+            },
+
+            //Methods -- Callback Arithmetic Functions
+            add (numberOne, numberTwo) {
+                return numberOne + numberTwo;
+            },
+
+            subtract (numberOne, numberTwo) {
+                return numberOne - numberTwo;
+            },
+
+            multiply (numberOne, numberTwo) {
+                return numberOne * numberTwo;
+            },
+
+            divide (numberOne, numberTwo) {
+                return numberOne / numberTwo;
+            }
+        };
+
+        //Event Listeners -- Numpad
+
+        calculator._buttonNumbers.forEach((button) => {
+            button.addEventListener('click', e => {
+                calculator.updateActiveDisplay(e.target.dataset.value, false);
+        })});
+        
+        calculator._buttonDecimal.addEventListener('click', calculator.addDecimal)
+
+        calculator._buttonBackspace.addEventListener('click', calculator.backspace);
+
+        //Event Listeners -- Operators
+
+        calculator._buttonOperators.forEach((button) => {
+            button.addEventListener('click', calculator.assignOperator);
+        });
+
+        //Event Listeners -- Equals & Clear
+        calculator._buttonClear.addEventListener('click', calculator.clearScreen);
+        calculator._buttonEnter.addEventListener('click', calculator.calculate);
+
+        /*document.addEventListener('keydown', e => {
+            let keyPress = document.querySelector(`button[data-key="${e.keycode}"]`);
+            if (keyPress) updateActiveDisplay(e.target.dataset.value, false);
+        });*/
+
+
+    </script>
+</html>
